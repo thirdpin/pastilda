@@ -1,3 +1,6 @@
 [submodule "lib/libopencm3"]
 	path = lib/libopencm3
 	url = https://github.com/thirdpin/libopencm3.git
+[submodule "emb/pastilda/lib/libopencm3_cpp_extensions"]
+	path = emb/pastilda/lib/libopencm3_cpp_extensions
+	url = https://github.com/thirdpin/libopencm3_cpp_extensions.git

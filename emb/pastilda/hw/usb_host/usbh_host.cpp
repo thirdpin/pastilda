@@ -12,19 +12,14 @@ USB_host::USB_host(redirect _redirect_callback, control_interception _control_in
 
 	timer_setup();
 	oth_hs_setup();
-	usart_setup();
 
 	hid_kbd_driver_init(&kbd_config);
 	usbh_init(usbh_lld_stm32f4_drivers, device_drivers);
-
-	LOG_PRINTF("USB init complete\n");
-	LOG_FLUSH();
 }
 
 void USB_host::poll()
 {
 	usbh_poll(get_time_us());
-	LOG_FLUSH();
 	delay_ms(1);
 }
 
@@ -56,22 +51,6 @@ void USB_host::oth_hs_setup()
 
 	uf_p.set_af(AF_Number::AF12);
 	uf_m.set_af(AF_Number::AF12);
-}
-
-void USB_host::usart_setup()
-{
-	GPIO_ext uart_rx(PC6);
-	GPIO_ext uart_tx(PC7);
-
-	uart_rx.mode_setup(Mode::ALTERNATE_FUNCTION, PullMode::NO_PULL);
-	uart_tx.mode_setup(Mode::ALTERNATE_FUNCTION, PullMode::NO_PULL);
-
-	uart_rx.set_af(AF_Number::AF8);
-	uart_tx.set_af(AF_Number::AF8);
-
-#ifdef USART_DEBUG
-	usart_init(USART6, 921600);
-#endif
 }
 
 //convert to 1MHz less precise timer value

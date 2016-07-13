@@ -106,10 +106,6 @@ struct _usbh_generic_data {
 typedef struct _usbh_generic_data usbh_generic_data_t;
 
 
-#define ERROR(arg) LOG_PRINTF("UNHANDLED_ERROR %d: file: %s, line: %d",\
-							arg, __FILE__, __LINE__)
-
-
 /// Hub related functions
 
 usbh_device_t *usbh_get_free_device(const usbh_device_t *dev);

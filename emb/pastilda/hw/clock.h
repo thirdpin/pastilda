@@ -48,20 +48,15 @@ static constexpr struct rcc_clock_scale rcc_hse_8mhz_to_hclk_120mhz =
 
 static void clock_setup()
 {
-	rcc_clock_setup_hse_3v3(&rcc_hse_8mhz_to_hclk_120mhz);
+	rcc_clock_setup_hse_3v3(&rcc_hse_25mhz_to_hclk_120mhz);
 
 	rcc_periph_clock_enable(rcc_periph_clken::RCC_GPIOA);
 	rcc_periph_clock_enable(rcc_periph_clken::RCC_GPIOB);
 	rcc_periph_clock_enable(rcc_periph_clken::RCC_GPIOC);
-	rcc_periph_clock_enable(rcc_periph_clken::RCC_GPIOD);
-	rcc_periph_clock_enable(rcc_periph_clken::RCC_USART6); //usb_host helper
-	rcc_periph_clock_enable(rcc_periph_clken::RCC_TIM6); //usb_host
-	rcc_periph_clock_enable(rcc_periph_clken::RCC_SPI1); //sst25
-	//rcc_periph_clock_enable(rcc_periph_clken::RCC_TIM9);
-	//rcc_periph_clock_enable(rcc_periph_clken::RCC_PWR);
-	//rcc_periph_clock_enable(rcc_periph_clken::RCC_SYSCFG);
-	rcc_periph_clock_enable(rcc_periph_clken::RCC_OTGFS); //device
-	rcc_periph_clock_enable(rcc_periph_clken::RCC_OTGHS); //host
+	rcc_periph_clock_enable(rcc_periph_clken::RCC_TIM6);
+	rcc_periph_clock_enable(rcc_periph_clken::RCC_SPI1);
+	rcc_periph_clock_enable(rcc_periph_clken::RCC_OTGFS);
+	rcc_periph_clock_enable(rcc_periph_clken::RCC_OTGHS);
 }
 
 #endif

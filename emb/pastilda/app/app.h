@@ -24,7 +24,6 @@ namespace Application
 	private:
 		LEDS_api *_leds_api;
 		USB_dispatcher *usb_dispatcher;
-		SPI_ext *_spi_ext;
 	};
 }
 #endif

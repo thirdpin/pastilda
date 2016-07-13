@@ -23,8 +23,6 @@
 #ifndef USBH_CONFIG_
 #define USBH_CONFIG_
 
-
-
 // Max devices per hub
 #define USBH_HUB_MAX_DEVICES	(8)
 

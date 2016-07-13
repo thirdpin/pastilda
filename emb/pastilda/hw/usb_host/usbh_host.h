@@ -2,13 +2,10 @@
 #define USBH_HOST_H
 
 #include <string.h>
-#include <libopencm3/cm3/common.h>
-#include <libopencm3/stm32/usart.h>
 #include "timer_ext.h"
 #include "gpio_ext.h"
 #include "systick_ext.h"
 BEGIN_DECLS
-#include "usart_helpers.h"
 #include "usbh_hubbed.h"
 #include "usbh_driver_hid_kbd.h"
 #include "usbh_lld_stm32f4.h"
@@ -46,6 +43,5 @@ private:
 	void timer_setup();
 	uint32_t get_time_us();
 	void oth_hs_setup();
-	void usart_setup();
 };
 #endif

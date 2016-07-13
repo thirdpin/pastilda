@@ -20,9 +20,9 @@
  *
  */
 
-#include "driver/usbh_device_driver.h"
+#include "usbh_device_driver.h"
 #include "usbh_lld_stm32f4.h"
-#include "usart_helpers.h"
+//#include "usart_helpers.h"
 
 #include <string.h>
 #include <stdint.h>
@@ -166,7 +166,6 @@ static void stm32f4_usbh_port_channel_setup(
 		eptyp = OTG_HCCHAR_EPTYP_ISOCHRONOUS;
 		break;
 	default:
-		LOG_PRINTF("\n\n\n\nWRONG EP TYPE\n\n\n\n\n");
 		return;
 	}
 
@@ -198,7 +197,6 @@ static void read(void *drvdata, usbh_packet_t *packet)
 	int8_t channel = get_free_channel(dev);
 	if (channel == -1) {
 		// BIG PROBLEM
-		LOG_PRINTF("FATAL ERROR IN, NO CHANNEL LEFT \n");
 		usbh_packet_callback_data_t cb_data;
 		cb_data.status = USBH_PACKET_CALLBACK_STATUS_EFATAL;
 		cb_data.transferred_length = 0;
@@ -246,7 +244,6 @@ static void write(void *drvdata, const usbh_packet_t *packet)
 
 	if (channel == -1) {
 		// BIG PROBLEM
-		LOG_PRINTF("FATAL ERROR OUT, NO CHANNEL LEFT \n");
 		usbh_packet_callback_data_t cb_data;
 		cb_data.status = USBH_PACKET_CALLBACK_STATUS_EFATAL;
 		cb_data.transferred_length = 0;
@@ -275,7 +272,6 @@ static void write(void *drvdata, const usbh_packet_t *packet)
 		}
 	} else {
 		dpid = OTG_HCTSIZ_DPID_DATA0; // ! TODO: BUG
-		LOG_PRINTF("BUG, %d",__LINE__);
 	}
 
 	uint32_t num_packets;
@@ -299,10 +295,8 @@ static void write(void *drvdata, const usbh_packet_t *packet)
 		volatile uint32_t *fifo = &REBASE_CH(OTG_FIFO, channel) + RX_FIFO_SIZE;
 		const uint32_t * buf32 = packet->data;
 		int i;
-		LOG_PRINTF("\nSending[%d]: ", packet->datalen);
 		for(i = packet->datalen; i >= 4; i-=4) {
 			const uint8_t *buf8 = (const uint8_t *)buf32;
-			LOG_PRINTF("%02X %02X %02X %02X, ", buf8[0], buf8[1], buf8[2], buf8[3]);
 			*fifo++ = *buf32++;
 
 		}
@@ -311,10 +305,8 @@ static void write(void *drvdata, const usbh_packet_t *packet)
 			*fifo = *buf32&((1 << (8*i)) - 1);
 			uint8_t *buf8 = (uint8_t *)buf32;
 			while (i--) {
-				LOG_PRINTF("%02X ", *buf8++);
 			}
 		}
-		LOG_PRINTF("\n");
 
 	} else {
 		volatile uint32_t *fifo = &REBASE_CH(OTG_FIFO, channel) +
@@ -325,7 +317,6 @@ static void write(void *drvdata, const usbh_packet_t *packet)
 			*fifo++ = *buf32++;
 		}
 	}
-	LOG_PRINTF("->WRITE %08X\n", REBASE_CH(OTG_HCCHAR, channel));
 }
 
 static void rxflvl_handle(void *drvdata)
@@ -358,7 +349,6 @@ static void rxflvl_handle(void *drvdata)
 		if ( channels[channel].data_index < channels[channel].packet.datalen) {
 			if (len == channels[channel].packet.endpoint_size_max) {
 				REBASE_CH(OTG_HCCHAR, channel) |= OTG_HCCHAR_CHENA;
-				LOG_PRINTF("CHENA[%d/%d] ", channels[channel].data_index, channels[channel].packet.datalen);
 			}
 
 		}
@@ -410,7 +400,6 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 				REBASE(OTG_HFIR) = (REBASE(OTG_HFIR) & ~OTG_HFIR_FRIVL_MASK) | 48000;
 				if ((REBASE(OTG_HCFG) & OTG_HCFG_FSLSPCS_MASK) != OTG_HCFG_FSLSPCS_48MHz) {
 					REBASE(OTG_HCFG) = (REBASE(OTG_HCFG) & ~OTG_HCFG_FSLSPCS_MASK) | OTG_HCFG_FSLSPCS_48MHz;
-					LOG_PRINTF("\n Reset Full-Speed \n");
 				}
 				channels_init(dev);
 				dev->dpstate = DEVICE_POLL_STATE_DEVRST;
@@ -420,7 +409,6 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 				REBASE(OTG_HFIR) = (REBASE(OTG_HFIR) & ~OTG_HFIR_FRIVL_MASK) | 6000;
 				if ((REBASE(OTG_HCFG) & OTG_HCFG_FSLSPCS_MASK) != OTG_HCFG_FSLSPCS_6MHz) {
 					REBASE(OTG_HCFG) = (REBASE(OTG_HCFG) & ~OTG_HCFG_FSLSPCS_MASK) | OTG_HCFG_FSLSPCS_6MHz;
-					LOG_PRINTF("\n Reset Low-Speed \n");
 				}
 
 				channels_init(dev);
@@ -458,7 +446,6 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 			// To clear interrupt write 0 to PENA
 			// To disable port write 1 to PENCHNG
 			REBASE(OTG_HPRT) &= ~OTG_HPRT_PENA;
-			LOG_PRINTF("PENCHNG");
 			if ((hprt & OTG_HPRT_PENA)) {
 				return USBH_POLL_STATUS_DEVICE_CONNECTED;
 			}
@@ -468,13 +455,11 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 		if (REBASE(OTG_HPRT) & OTG_HPRT_POCCHNG) {
 			// TODO: Check for functionality
 			REBASE(OTG_HPRT) |= OTG_HPRT_POCCHNG;
-			LOG_PRINTF("POCCHNG");
 		}
 	}
 
 	if (REBASE(OTG_GINTSTS) & OTG_GINTSTS_DISCINT) {
 		REBASE(OTG_GINTSTS) = OTG_GINTSTS_DISCINT;
-		LOG_PRINTF("DISCINT");
 
 		/*
 		 * When the voltage drops, DISCINT interrupt is generated although
@@ -482,7 +467,6 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 		 * Often, DISCINT is bad interpreted upon insertion of device
 		 */
 		if (!(REBASE(OTG_HPRT) & OTG_HPRT_PCSTS)) {
-			LOG_PRINTF("discint processsing...");
 			channels_init(dev);
 		}
 		reg = REBASE(OTG_GINTSTS);
@@ -508,7 +492,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_NAK) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_NAK;
-					LOG_PRINTF("NAK");
+
 
 					REBASE_CH(OTG_HCCHAR, channel) |= OTG_HCCHAR_CHENA;
 
@@ -516,7 +500,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_ACK) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_ACK;
-					LOG_PRINTF("ACK");
+
 					if (eptyp == USBH_EPTYP_CONTROL) {
 						channels[channel].packet.toggle[0] = 1;
 					} else {
@@ -526,7 +510,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_XFRC) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_XFRC;
-					LOG_PRINTF("XFRC");
+
 
 					free_channel(dev, channel);
 
@@ -542,7 +526,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_FRMOR) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_FRMOR;
-					LOG_PRINTF("FRMOR");
+
 
 					usbh_packet_callback_data_t cb_data;
 					cb_data.status = USBH_PACKET_CALLBACK_STATUS_EFATAL;
@@ -556,7 +540,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_TXERR) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_TXERR;
-					LOG_PRINTF("TXERR");
+
 
 					free_channel(dev, channel);
 
@@ -573,7 +557,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_STALL) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_STALL;
-					LOG_PRINTF("STALL");
+
 
 					free_channel(dev, channel);
 
@@ -589,7 +573,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_CHH) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_CHH;
-					LOG_PRINTF("CHH");
+
 
 					free_channel(dev, channel);
 				}
@@ -598,7 +582,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 				if (hcint & OTG_HCINT_NAK) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_NAK;
 					if (eptyp == USBH_EPTYP_CONTROL) {
-						 LOG_PRINTF("NAK");
+
 					}
 
 					REBASE_CH(OTG_HCCHAR, channel) |= OTG_HCCHAR_CHENA;
@@ -607,12 +591,12 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_DTERR) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_DTERR;
-					LOG_PRINTF("DTERR");
+
 				}
 
 				if (hcint & OTG_HCINT_ACK) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_ACK;
-					LOG_PRINTF("ACK");
+
 
 					channels[channel].packet.toggle[0] ^= 1;
 
@@ -622,7 +606,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_XFRC) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_XFRC;
-					LOG_PRINTF("XFRC");
+
 
 					free_channel(dev, channel);
 					usbh_packet_callback_data_t cb_data;
@@ -642,7 +626,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_BBERR) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_BBERR;
-					LOG_PRINTF("BBERR");
+
 					free_channel(dev, channel);
 
 					usbh_packet_callback_data_t cb_data;
@@ -656,13 +640,12 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_FRMOR) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_FRMOR;
-					LOG_PRINTF("FRMOR");
 
 				}
 
 				if (hcint & OTG_HCINT_TXERR) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_TXERR;
-					LOG_PRINTF("TXERR");
+
 
 					free_channel(dev, channel);
 
@@ -678,7 +661,7 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 				if (hcint & OTG_HCINT_STALL) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_STALL;
-					LOG_PRINTF("STALL");
+
 
 					free_channel(dev, channel);
 
@@ -693,7 +676,6 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 				}
 				if (hcint & OTG_HCINT_CHH) {
 					REBASE_CH(OTG_HCINT, channel) = OTG_HCINT_CHH;
-					LOG_PRINTF("CHH");
 					free_channel(dev, channel);
 				}
 
@@ -703,12 +685,10 @@ static enum USBH_POLL_STATUS poll_run(usbh_lld_stm32f4_driver_data_t *dev)
 
 	if (REBASE(OTG_GINTSTS) & OTG_GINTSTS_MMIS) {
 		REBASE(OTG_GINTSTS) = OTG_GINTSTS_MMIS;
-		LOG_PRINTF("Mode mismatch");
 	}
 
 	if (REBASE(OTG_GINTSTS) & OTG_GINTSTS_IPXFR) {
 		REBASE(OTG_GINTSTS) = OTG_GINTSTS_IPXFR;
-		LOG_PRINTF("IPXFR");
 	}
 
 	return USBH_POLL_STATUS_NONE;
@@ -843,8 +823,6 @@ static void poll_init(usbh_lld_stm32f4_driver_data_t *dev)
 			// Uncomment to enable Interrupt generation
 			REBASE(OTG_GAHBCFG) |= OTG_GAHBCFG_GINT;
 
-			LOG_PRINTF("INIT COMPLETE\n");
-
 			// Finish
 			dev->state = DEVICE_STATE_RUN;
 			dev->dpstate = DEVICE_POLL_STATE_DISCONN;
@@ -856,7 +834,6 @@ static void poll_init(usbh_lld_stm32f4_driver_data_t *dev)
 	if (done) {
 		dev->poll_sequence++;
 		dev->timestamp_us = dev->time_curr_us;
-		LOG_PRINTF("\t\t POLL SEQUENCE %d\n", dev->poll_sequence);
 	}
 
 }
@@ -867,10 +844,7 @@ static void poll_reset(usbh_lld_stm32f4_driver_data_t *dev)
 		REBASE(OTG_HPRT) &= ~OTG_HPRT_PRST;
 		dev->state = dev->state_prev;
 		dev->state_prev = DEVICE_STATE_RESET;
-
-		LOG_PRINTF("RESET");
 	} else {
-		LOG_PRINTF("waiting %d < %d\n",dev->time_curr_us, dev->timestamp_us);
 	}
 }
 
@@ -946,7 +920,6 @@ static void free_channel(void *drvdata, uint8_t channel)
 	if (REBASE_CH(OTG_HCCHAR, channel) & OTG_HCCHAR_CHENA) {
 		REBASE_CH(OTG_HCCHAR, channel) |= OTG_HCCHAR_CHDIS;
 		REBASE_CH(OTG_HCINT, channel) = ~0;
-		LOG_PRINTF("\nDisabling channel %d\n", channel);
 	} else {
 		channels[channel].state = CHANNEL_STATE_FREE;
 	}

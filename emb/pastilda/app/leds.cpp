@@ -4,10 +4,12 @@ using namespace LEDS_API;
 
 LEDS_api::LEDS_api()
 {
-	_leds[0] = new GPIO_ext(LED_A);
-	_leds[1] = new GPIO_ext(LED_B);
+	_leds[0] = new GPIO_ext(LED_R);
+	_leds[1] = new GPIO_ext(LED_G);
+	_leds[2] = new GPIO_ext(LED_B);
 	_leds[0]->mode_setup(Mode::OUTPUT, PullMode::NO_PULL);
 	_leds[1]->mode_setup(Mode::OUTPUT, PullMode::NO_PULL);
+	_leds[2]->mode_setup(Mode::OUTPUT, PullMode::NO_PULL);
 
 	_leds_state = LEDS_INI_STATE;
 	_timer_leds_toggle = new TimerMs(TimerMode::CYCLE, LEDS_TOGGLE_PERIOD_MS);

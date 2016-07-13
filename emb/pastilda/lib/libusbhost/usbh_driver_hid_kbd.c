@@ -1,7 +1,7 @@
 #include "usbh_hubbed.h"
-#include "driver/usbh_device_driver.h"
+#include "usbh_device_driver.h"
 #include "usbh_driver_hid_kbd.h"
-#include "usart_helpers.h"
+//#include "usart_helpers.h"
 
 #include <libopencm3/usb/usbstd.h>
 
@@ -47,7 +47,6 @@ void hid_kbd_driver_init(const hid_kbd_config_t *config)
 static void *init(void *usbh_dev)
 {
 	if (!initialized) {
-		LOG_PRINTF("\n%s/%d : driver not initialized\r\n", __FILE__, __LINE__);
 		return (0);
 	}
 
@@ -126,7 +125,6 @@ static void event(usbh_device_t *dev, usbh_packet_callback_data_t cb_data)
 
 			case USBH_PACKET_CALLBACK_STATUS_EFATAL:
 			case USBH_PACKET_CALLBACK_STATUS_EAGAIN:
-				ERROR(cb_data.status);
 				kbd->state_next = STATE_INACTIVE;
 				break;
 			}
@@ -135,7 +133,6 @@ static void event(usbh_device_t *dev, usbh_packet_callback_data_t cb_data)
 
 	case STATE_SET_CONFIGURATION_EMPTY_READ:
 		{
-			LOG_PRINTF("|empty packet read|");
 			switch (cb_data.status) {
 			case USBH_PACKET_CALLBACK_STATUS_OK:
 				kbd->state_next = STATE_SET_CONFIGURATION_COMPLETE;
@@ -145,7 +142,6 @@ static void event(usbh_device_t *dev, usbh_packet_callback_data_t cb_data)
 			case USBH_PACKET_CALLBACK_STATUS_ERRSIZ:
 			case USBH_PACKET_CALLBACK_STATUS_EFATAL:
 			case USBH_PACKET_CALLBACK_STATUS_EAGAIN:
-				ERROR(cb_data.status);
 				kbd->state_next = STATE_INACTIVE;
 				break;
 			}
@@ -157,13 +153,11 @@ static void event(usbh_device_t *dev, usbh_packet_callback_data_t cb_data)
 			case USBH_PACKET_CALLBACK_STATUS_OK:
 				kbd->state_next = STATE_READING_REQUEST;
 				kbd->endpoint_in_toggle = 0;
-				LOG_PRINTF("\nKEYBOARD CONFIGURED\n");
 				break;
 
 			case USBH_PACKET_CALLBACK_STATUS_ERRSIZ:
 			case USBH_PACKET_CALLBACK_STATUS_EFATAL:
 			case USBH_PACKET_CALLBACK_STATUS_EAGAIN:
-				ERROR(cb_data.status);
 				kbd->state_next = STATE_INACTIVE;
 				break;
 			}

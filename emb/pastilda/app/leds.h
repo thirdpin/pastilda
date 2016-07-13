@@ -8,10 +8,11 @@ using namespace GPIO_CPP_Extension;
 
 namespace LEDS_API
 {
-	constexpr Pinout LED_A                       = PD12;
-	constexpr Pinout LED_B                       = PD13;
-	constexpr uint8_t LEDS_COUNT                 = 0x02;
-	constexpr uint8_t LEDS_MAX_STATE             = 0x02;
+	constexpr Pinout LED_R                       = PB0;
+	constexpr Pinout LED_G                       = PB1;
+	constexpr Pinout LED_B                       = PB3;
+	constexpr uint8_t LEDS_COUNT                 = 0x03;
+	constexpr uint8_t LEDS_MAX_STATE             = 0x07;
 	constexpr uint8_t LEDS_INI_STATE     		 = 0x01;
 	constexpr uint32_t LEDS_TOGGLE_PERIOD_MS     = 500;
 
