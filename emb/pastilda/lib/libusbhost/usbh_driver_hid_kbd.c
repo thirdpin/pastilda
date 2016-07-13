@@ -1,9 +1,9 @@
 #include "usbh_hubbed.h"
 #include "usbh_device_driver.h"
 #include "usbh_driver_hid_kbd.h"
-//#include "usart_helpers.h"
 
 #include <libopencm3/usb/usbstd.h>
+#include <stdint.h>
 
 enum STATES {
 	STATE_INACTIVE,
@@ -16,7 +16,7 @@ enum STATES {
 
 struct _hid_kbd_device {
 	usbh_device_t *usbh_device;
-	uint8_t buffer[USBH_HID_MOUSE_BUFFER];
+	uint8_t buffer[USBH_HID_KBD_BUFFER];
 	uint16_t endpoint_in_maxpacketsize;
 	uint8_t endpoint_in_address;
 	enum STATES state_next;
@@ -26,10 +26,8 @@ struct _hid_kbd_device {
 };
 typedef struct _hid_kbd_device hid_kbd_device_t;
 
-static hid_kbd_device_t kbd_device[USBH_HID_MOUSE_MAX_DEVICES];
+static hid_kbd_device_t kbd_device[USBH_HID_KBD_MAX_DEVICES];
 static const hid_kbd_config_t *kbd_config;
-
-#include <stdint.h>
 
 static bool initialized = false;
 
@@ -39,7 +37,7 @@ void hid_kbd_driver_init(const hid_kbd_config_t *config)
 	initialized = true;
 
 	kbd_config = config;
-	for (i = 0; i < USBH_HID_MOUSE_MAX_DEVICES; i++) {
+	for (i = 0; i < USBH_HID_KBD_MAX_DEVICES; i++) {
 		kbd_device[i].state_next = STATE_INACTIVE;
 	}
 }
@@ -54,7 +52,7 @@ static void *init(void *usbh_dev)
 	hid_kbd_device_t *drvdata = 0;
 
 	// find free data space for mouse device
-	for (i = 0; i < USBH_HID_MOUSE_MAX_DEVICES; i++) {
+	for (i = 0; i < USBH_HID_KBD_MAX_DEVICES; i++) {
 		if (kbd_device[i].state_next == STATE_INACTIVE) {
 			drvdata = &kbd_device[i];
 			drvdata->device_id = i;
@@ -238,8 +236,8 @@ static const usbh_dev_driver_info_t driver_info = {
 	.idVendor = -1,
 	.idProduct = -1,
 	.ifaceClass = 0x03,
-	.ifaceSubClass = 1, //-1
-	.ifaceProtocol = 0x01 //0x02
+	.ifaceSubClass = 1,
+	.ifaceProtocol = 0x01
 };
 
 const usbh_dev_driver_t usbh_hid_kbd_driver = {

@@ -6,8 +6,6 @@
 
 BEGIN_DECLS
 
-typedef void (*t_read_kbd)(void* data, uint8_t data_len);
-
 struct _hid_kbd_config {
 	void (*kbd_in_message_handler)(uint8_t device_id, const uint8_t *data);
 };

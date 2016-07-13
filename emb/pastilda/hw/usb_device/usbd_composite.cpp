@@ -1,3 +1,24 @@
+/*
+ * This file is part of the pastilda project.
+ * hosted at http://github.com/thirdpin/pastilda
+ *
+ * Copyright (C) 2016  Third Pin LLC
+ * Written by Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "usbd_composite.h"
 
 using namespace GPIO_CPP_Extension;
@@ -38,7 +59,6 @@ void USB_composite::usb_send_packet(const void *buf, int len)
 void USB_OTG_IRQ()
 {
 	usbd_poll(usb_pointer->my_usb_device);
-	usb_pointer->last_usb_request_time = get_counter_ms();
 }
 
 int USB_composite::hid_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, uint8_t **buf, uint16_t *len,

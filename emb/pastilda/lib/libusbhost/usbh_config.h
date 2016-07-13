@@ -39,7 +39,11 @@
 // MOUSE
 #define USBH_HID_MOUSE_MAX_DEVICES	(2)
 
+#define USBH_HID_KBD_MAX_DEVICES	(1)
+
 #define USBH_HID_MOUSE_BUFFER		(32)
+
+#define USBH_HID_KBD_BUFFER         (32)
 
 // MIDI
 // Maximal number of midi devices connected to whatever hub
