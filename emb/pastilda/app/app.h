@@ -23,12 +23,18 @@
 #define APP_H
 
 #include <string.h>
+#include <usb/usb_device/usbd_composite.h>
+#include <usb/usb_host/usbh_host.h>
 #include "clock.h"
 #include "gpio_ext.h"
 #include "systick_ext.h"
 #include "leds.h"
-#include "usb_dispatcher.h"
-#include "spi_ext.h"
+#include "flash_memory.h"
+
+extern "C" {
+#include "keyboard.h"
+}
+
 
 using namespace LEDS_API;
 using namespace GPIO_CPP_Extension;
@@ -42,9 +48,15 @@ namespace Application
 		App();
 		void process();
 
+		static void redirect(uint8_t *data, uint8_t len);
+		static void control_interception();
+
 	private:
 		LEDS_api *_leds_api;
-		USB_dispatcher *usb_dispatcher;
+		FlashMemory *_flash;
+		USB_composite *usb_composite;
+		USB_host *usb_host;
+		uint8_t key[8];
 	};
 }
 #endif

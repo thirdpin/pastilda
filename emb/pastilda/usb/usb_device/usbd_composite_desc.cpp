@@ -19,36 +19,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef USB_DISPATCHER_H
-#define USB_DISPATCHER_H
+#include <usb/usb_device/usbd_composite_desc.h>
 
-#include "usbh_host.h"
-#include "usbd_composite.h"
-extern "C"
-{
-#include "keyboard.h"
-}
-
-class USB_dispatcher
-{
-public:
-	USB_composite *usb_composite;
-	USB_host *usb_host;
-	uint8_t key[8];
-
-	USB_dispatcher();
-
-	static void redirect(uint8_t *data, uint8_t len);
-	static void control_interception();
-	void do_work();
-	void process()
-	{
-		usb_host->poll();
-	}
-private:
-	bool _interception_enabled;
-
-
-};
-
-#endif
+constexpr uint8_t UsbCompositeDescriptors::keyboard_report_descriptor[];
+constexpr UsbCompositeDescriptors::type_hid_function  UsbCompositeDescriptors::keyboard_hid_function;
+constexpr struct usb_device_descriptor UsbCompositeDescriptors::dev;
+constexpr struct usb_endpoint_descriptor UsbCompositeDescriptors::hid_endpoint;
+constexpr struct usb_endpoint_descriptor UsbCompositeDescriptors::msc_endpoint[];
+constexpr struct usb_interface_descriptor UsbCompositeDescriptors::iface[];
+constexpr struct usb_config_descriptor::usb_interface UsbCompositeDescriptors::ifaces[];
+constexpr struct usb_config_descriptor UsbCompositeDescriptors::config_descr;
+constexpr char UsbCompositeDescriptors::usb_strings[][30];

@@ -19,12 +19,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "usbd_composite.h"
+#include <usb/usb_device/usbd_composite.h>
 
 using namespace GPIO_CPP_Extension;
 
 USB_composite *usb_pointer;
-USB_composite::USB_composite()
+USB_composite::USB_composite(const uint32_t block_count,
+	 	                     int (*read_block)(uint32_t lba, uint8_t *copy_to),
+	                         int (*write_block)(uint32_t lba, const uint8_t *copy_from))
 {
 	usb_pointer = this;
 	descriptors = new UsbCompositeDescriptors();
@@ -38,17 +40,15 @@ USB_composite::USB_composite()
 	uf_p.set_af(AF_Number::AF10);
 	uf_m.set_af(AF_Number::AF10);
 
-	my_usb_device = usbd_init(&otgfs_usb_driver, &(descriptors->dev),
-			&(descriptors->config_descr), (const char**)descriptors->usb_strings, 3,
+	my_usb_device = usbd_init(&otgfs_usb_driver, &(UsbCompositeDescriptors::dev),
+			&(UsbCompositeDescriptors::config_descr), (const char**)UsbCompositeDescriptors::usb_strings, 3,
 			  usbd_control_buffer, sizeof(usbd_control_buffer));
 
 	usbd_register_set_config_callback(my_usb_device, USB_set_config_callback);
 	nvic_enable_irq(NVIC_OTG_FS_IRQ);
 
-	ramdisk_init();
-
 	usb_msc_init(my_usb_device, Endpoint::E_MASS_STORAGE_IN, 64, Endpoint::E_MASS_STORAGE_OUT, 64,
-			"ThirdPin", "Pastilda", "0.00", ramdisk_blocks(), ramdisk_read, ramdisk_write);
+			"ThirdPin", "Pastilda", "0.00", block_count, read_block, write_block);
 }
 
 void USB_composite::usb_send_packet(const void *buf, int len)
@@ -59,6 +59,15 @@ void USB_composite::usb_send_packet(const void *buf, int len)
 void USB_OTG_IRQ()
 {
 	usbd_poll(usb_pointer->my_usb_device);
+}
+
+void USB_composite::hid_set_config(usbd_device *usbd_dev, uint16_t wValue)
+{
+	(void)wValue;
+	(void)usbd_dev;
+
+	usbd_ep_setup(usbd_dev, Endpoint::E_KEYBOARD, USB_ENDPOINT_ATTR_INTERRUPT, 8, 0);
+	usbd_register_control_callback(usbd_dev, USB_REQ_TYPE_INTERFACE, USB_REQ_TYPE_RECIPIENT, USB_control_callback );
 }
 
 int USB_composite::hid_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
@@ -145,7 +154,7 @@ int USB_control_callback(usbd_device *usbd_dev,
 		struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
 		usbd_control_complete_callback *complete)
 {
-	return( usb_pointer->hid_control_request(usbd_dev, req, buf, len, complete));
+	return(usb_pointer->hid_control_request(usbd_dev, req, buf, len, complete));
 }
 
 

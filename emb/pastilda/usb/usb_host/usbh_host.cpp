@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "usbh_host.h"
+#include <usb/usb_host/usbh_host.h>
 
 constexpr hid_kbd_config_t USB_host::kbd_config;
 constexpr usbh_dev_driver_t* USB_host::device_drivers[];
