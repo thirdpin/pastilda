@@ -1,1 +1,1 @@
-# pastilda
+# PASTILDA - open source password manager
