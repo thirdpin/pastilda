@@ -21,6 +21,7 @@
 
 #include "app.h"
 #include "stdio.h"
+#include "wrapset.h"
 using namespace Application;
 
 App *app_pointer;
@@ -50,7 +51,7 @@ void App::redirect(uint8_t *data, uint8_t len)
 
 void App::control_interception()
 {
-	memset(app_pointer->key, 0, 8);
+	ZeroIt(app_pointer->key);
 	app_pointer->key[2] = KEY_W;
 	app_pointer->key[3] = KEY_O;
 	app_pointer->key[4] = KEY_N;
