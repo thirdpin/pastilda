@@ -3,7 +3,10 @@
  * hosted at http://github.com/thirdpin/pastilda
  *
  * Copyright (C) 2016  Third Pin LLC
- * Written by Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *
+ * Written by:
+ *  Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *	Dmitrii Lisin <mrlisdim@ya.ru>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +22,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cstdio>
+
+#include <FastDelegate.h>
+#include <libopencmsis/core_cm3.h>
+
 #include "app.h"
-#include "stdio.h"
+
+using namespace std::placeholders;
+
 using namespace Application;
+using namespace Keys;
+
+namespace fastdeligate = fd;
 
 App *app_pointer;
 
@@ -29,57 +42,37 @@ App::App()
 {
 	app_pointer = this;
 
-	clock_setup();
-	systick_init();
+	scb_set_priority_grouping(SCB_AIRCR_PRIGROUP_GROUP2_SUB8);
 
-	_leds_api = new LEDS_api();
-	_flash = new FlashMemory();
-	usb_host = new USB_host(redirect, control_interception);
-	usb_composite = new USB_composite(_flash->flash_blocks(), _flash->flash_read, _flash->flash_write);
+	_fs = new FileSystem();
+
+	_usb_composite = new USB_composite(UsbMemoryControlParams {	_fs->msd_blocks(),
+																_fs->msd_read,
+																_fs->msd_write });
+
+	Logic::TildaLogic::SpecialPoints specialMenuPoints {
+		{
+			"Format flash",
+			std::strlen("Format flash\0"),
+			fd::MakeDelegate(_fs, &FileSystem::format_to_FAT12)
+		}
+	};
+	_tildaLogic = new Logic::TildaLogic(_usb_composite->get_usb_deque(),
+								 	 	specialMenuPoints);
+
+	_usb_host = new USB_host(host_keyboard_callback);
+	// TODO: fix it
+	delay_ms(6000);  // wait usb device initializing
+	_usb_composite->init_hid_interrupt();
 }
+
 void App::process()
 {
-	_leds_api->toggle();
-	usb_host->poll();
+	_leds_api.toggle();
+	_usb_host->poll();
 }
 
-void App::redirect(uint8_t *data, uint8_t len)
+void App::host_keyboard_callback(uint8_t *data, uint8_t len)
 {
-	app_pointer->usb_composite->usb_send_packet(data, len);
-}
-
-void App::control_interception()
-{
-	memset(app_pointer->key, 0, 8);
-	app_pointer->key[2] = KEY_W;
-	app_pointer->key[3] = KEY_O;
-	app_pointer->key[4] = KEY_N;
-	app_pointer->key[5] = KEY_D;
-	app_pointer->key[6] = KEY_E;
-	app_pointer->key[7] = KEY_R;
-	app_pointer->usb_composite->usb_send_packet(app_pointer->key, 8);
-
-	app_pointer->key[2] = 0;
-	app_pointer->key[3] = 0;
-	app_pointer->key[4] = 0;
-	app_pointer->key[5] = 0;
-	app_pointer->key[6] = 0;
-	app_pointer->key[7] = 0;
-	app_pointer->usb_composite->usb_send_packet(app_pointer->key, 8);
-
-	app_pointer->key[2] = KEY_SPACEBAR;
-	app_pointer->key[3] = KEY_W;
-	app_pointer->key[4] = KEY_O;
-	app_pointer->key[5] = KEY_M;
-	app_pointer->key[6] = KEY_A;
-	app_pointer->key[7] = KEY_N;
-	app_pointer->usb_composite->usb_send_packet(app_pointer->key, 8);
-
-	app_pointer->key[2] = 0;
-	app_pointer->key[3] = 0;
-	app_pointer->key[4] = 0;
-	app_pointer->key[5] = 0;
-	app_pointer->key[6] = 0;
-	app_pointer->key[7] = 0;
-	app_pointer->usb_composite->usb_send_packet(app_pointer->key, 8);
+	app_pointer->_tildaLogic->process(data, len);
 }

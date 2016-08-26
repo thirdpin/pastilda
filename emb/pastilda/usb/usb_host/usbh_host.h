@@ -3,7 +3,10 @@
  * hosted at http://github.com/thirdpin/pastilda
  *
  * Copyright (C) 2016  Third Pin LLC
- * Written by Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *
+ * Written by:
+ *  Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *	Dmitrii Lisin <mrlisdim@ya.ru>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,16 +42,14 @@ constexpr uint8_t  USB_HOST_TIMER_NUMBER     = 6;
 constexpr uint16_t USB_HOST_TIMER_PRESCALER  = (8400 - 1);
 constexpr uint16_t USB_HOST_TIMER_PERIOD     = (65535);
 
-typedef void (*redirect)(uint8_t *data, uint8_t len);
-typedef void (*control_interception)();
+typedef void (*callback_func)(uint8_t *data, uint8_t len);
 
-static redirect redirect_callback;
-static control_interception control_interception_callback;
+static callback_func callback;
 
 class USB_host
 {
 public:
-	USB_host(redirect redirect_callback, control_interception control_interception_callback);
+	USB_host(callback_func callback);
 	void poll();
 
 	static void kbd_in_message_handler(uint8_t data_len, const uint8_t *data);

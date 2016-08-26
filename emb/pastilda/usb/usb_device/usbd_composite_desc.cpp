@@ -3,7 +3,10 @@
  * hosted at http://github.com/thirdpin/pastilda
  *
  * Copyright (C) 2016  Third Pin LLC
- * Written by Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *
+ * Written by:
+ *  Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *	Dmitrii Lisin <mrlisdim@ya.ru>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +22,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <usb/usb_device/usbd_composite_desc.h>
+#include "usbd_composite_desc.h"
 
 constexpr uint8_t UsbCompositeDescriptors::keyboard_report_descriptor[];
 constexpr UsbCompositeDescriptors::type_hid_function  UsbCompositeDescriptors::keyboard_hid_function;

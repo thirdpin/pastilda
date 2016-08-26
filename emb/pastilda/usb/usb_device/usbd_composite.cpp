@@ -3,7 +3,10 @@
  * hosted at http://github.com/thirdpin/pastilda
  *
  * Copyright (C) 2016  Third Pin LLC
- * Written by Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *
+ * Written by:
+ *  Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *	Dmitrii Lisin <mrlisdim@ya.ru>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +22,45 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <usb/usb_device/usbd_composite.h>
+#include "menu/UsbPackageFactory.h"
+#include "keys/Key.h"
+#include "stdio.h"
+
+#include "usbd_composite.h"
 
 using namespace GPIO_CPP_Extension;
 
 USB_composite *usb_pointer;
-USB_composite::USB_composite(const uint32_t block_count,
-	 	                     int (*read_block)(uint32_t lba, uint8_t *copy_to),
-	                         int (*write_block)(uint32_t lba, const uint8_t *copy_from))
+
+void USB_composite::device_keybord_interrupt(usbd_device*, unsigned char)
+{
+	static UsbPackage lastPackage = UsbPackages::ZERO_PACKAGE;
+
+	UsbDequeStandart* usbDeque = usb_pointer->get_usb_deque();
+
+	if (usbDeque->isPopOnly() && !usbDeque->empty()) {
+		UsbPackage& package = usbDeque->front();
+
+		lastPackage = package;
+
+		size_t result = usb_pointer->usb_send_packet_nonblock(
+				package.data(), package.length()
+			);
+
+		bool packageSended = (result != 0);
+		if (packageSended) {
+			usbDeque->pop_front();
+		}
+	}
+	else {
+		usb_pointer->usb_send_packet_nonblock(
+				lastPackage.data(), lastPackage.length()
+			);
+	}
+}
+
+
+USB_composite::USB_composite(UsbMemoryControlParams memoryParams)
 {
 	usb_pointer = this;
 	descriptors = new UsbCompositeDescriptors();
@@ -40,15 +74,32 @@ USB_composite::USB_composite(const uint32_t block_count,
 	uf_p.set_af(AF_Number::AF10);
 	uf_m.set_af(AF_Number::AF10);
 
-	my_usb_device = usbd_init(&otgfs_usb_driver, &(UsbCompositeDescriptors::dev),
-			&(UsbCompositeDescriptors::config_descr), (const char**)UsbCompositeDescriptors::usb_strings, 3,
-			  usbd_control_buffer, sizeof(usbd_control_buffer));
+	my_usb_device = usbd_init(&otgfs_usb_driver, &(descriptors->dev),
+			                  &(descriptors->config_descr), (const char**)descriptors->usb_strings, 3,
+							  usbd_control_buffer, sizeof(usbd_control_buffer));
 
 	usbd_register_set_config_callback(my_usb_device, USB_set_config_callback);
-	nvic_enable_irq(NVIC_OTG_FS_IRQ);
 
-	usb_msc_init(my_usb_device, Endpoint::E_MASS_STORAGE_IN, 64, Endpoint::E_MASS_STORAGE_OUT, 64,
-			"ThirdPin", "Pastilda", "0.00", block_count, read_block, write_block);
+	usb_msc_init(my_usb_device,
+			     Endpoint::E_MASS_STORAGE_IN, 64, Endpoint::E_MASS_STORAGE_OUT, 64,
+			     "ThirdPin", "Pastilda", "0.00",
+				 memoryParams.block_count, memoryParams.read_block_func, memoryParams.write_block_func);
+
+	nvic_set_priority(NVIC_OTG_FS_IRQ, 0x01<<7);
+	nvic_enable_irq(NVIC_OTG_FS_IRQ);
+}
+
+void USB_composite::init_hid_interrupt()
+{
+	send_zero_package();
+}
+
+void USB_composite::send_zero_package()
+{
+	usb_send_packet_nonblock(
+			UsbPackages::ZERO_PACKAGE.data(),
+			UsbPackages::ZERO_PACKAGE.length()
+		);
 }
 
 void USB_composite::usb_send_packet(const void *buf, int len)
@@ -56,18 +107,15 @@ void USB_composite::usb_send_packet(const void *buf, int len)
     while(usbd_ep_write_packet(my_usb_device, 0x81, buf, len) == 0);
 }
 
+uint16_t USB_composite::usb_send_packet_nonblock(const void *buf, int len)
+{
+    return usbd_ep_write_packet(my_usb_device, 0x81, buf, len);
+}
+
 void USB_OTG_IRQ()
 {
 	usbd_poll(usb_pointer->my_usb_device);
-}
-
-void USB_composite::hid_set_config(usbd_device *usbd_dev, uint16_t wValue)
-{
-	(void)wValue;
-	(void)usbd_dev;
-
-	usbd_ep_setup(usbd_dev, Endpoint::E_KEYBOARD, USB_ENDPOINT_ATTR_INTERRUPT, 8, 0);
-	usbd_register_control_callback(usbd_dev, USB_REQ_TYPE_INTERFACE, USB_REQ_TYPE_RECIPIENT, USB_control_callback );
+	usb_pointer->last_usb_request_time = get_counter_ms();
 }
 
 int USB_composite::hid_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
@@ -101,8 +149,9 @@ int USB_composite::hid_control_request(usbd_device *usbd_dev, struct usb_setup_d
 		{
 			if (req->bRequest == HidRequest::GET_REPORT)
 			{
-				*buf = (uint8_t*)&boot_key_report;
-				*len = sizeof(boot_key_report);
+				static UsbPackage package = UsbPackages::ZERO_PACKAGE;
+				*buf = package.data();
+				*len = package.length();
 				return (USBD_REQ_HANDLED);
 			}
 			else if (req->bRequest == HidRequest::GET_IDLE)
@@ -154,7 +203,7 @@ int USB_control_callback(usbd_device *usbd_dev,
 		struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
 		usbd_control_complete_callback *complete)
 {
-	return(usb_pointer->hid_control_request(usbd_dev, req, buf, len, complete));
+	return( usb_pointer->hid_control_request(usbd_dev, req, buf, len, complete));
 }
 
 

@@ -3,7 +3,10 @@
  * hosted at http://github.com/thirdpin/pastilda
  *
  * Copyright (C) 2016  Third Pin LLC
- * Written by Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *
+ * Written by:
+ *  Anastasiia Lazareva <a.lazareva@thirdpin.ru>
+ *	Dmitrii Lisin <mrlisdim@ya.ru>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,21 +22,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <usb/usb_host/usbh_host.h>
+#include "usbh_host.h"
 
 constexpr hid_kbd_config_t USB_host::kbd_config;
 constexpr usbh_dev_driver_t* USB_host::device_drivers[];
 
 USB_host *usb_host_pointer;
-USB_host::USB_host(redirect _redirect_callback, control_interception _control_interception_callback)
+USB_host::USB_host(callback_func _callback)
 {
 	usb_host_pointer = this;
-	redirect_callback = _redirect_callback;
-	control_interception_callback = _control_interception_callback;
+	callback = _callback;
 
 	timer_setup();
 	oth_hs_setup();
-
 	hid_kbd_driver_init(&kbd_config);
 	usbh_init(usbh_lld_stm32f4_drivers, device_drivers);
 }
@@ -46,12 +47,7 @@ void USB_host::poll()
 
 void USB_host::kbd_in_message_handler(uint8_t data_len, const uint8_t *data)
 {
-	if ((data[0] == 0x03) && data[2] == 0x35) {
-		control_interception_callback();
-	}
-	else {
-		redirect_callback((uint8_t*)data, data_len);
-	}
+	callback((uint8_t*)data, data_len);
 }
 
 void USB_host::timer_setup()
